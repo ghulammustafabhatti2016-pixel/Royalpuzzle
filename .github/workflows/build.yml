@@ -1,1 +1,41 @@
 
+name: Build APK
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Create Android project
+        run: |
+          mkdir www
+          cp $(ls index.html index.txt 2>/dev/null | head -n 1) www/index.html
+          python3 - <<'PY'
+          import re,base64
+          t=open('www/index.html').read()
+          open('icon.png','wb').write(base64.b64decode(re.search(r'id="appicon">([^<]+)<',t).group(1)))
+          PY
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npx cap init "Royal Puzzle" com.royalpuzzle.game --web-dir www
+          npx cap add android
+          sed -i 's/<activity/<activity android:screenOrientation="portrait"/' android/app/src/main/AndroidManifest.xml
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          find android/app/src/main/res -name 'ic_launcher*.png' -exec cp icon.png {} \;
+      - name: Build
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk RoyalPuzzle.apk
+          gh release create v${{ github.run_number }} RoyalPuzzle.apk --title "Royal Puzzle test build ${{ github.run_number }}" --notes "Test build"
