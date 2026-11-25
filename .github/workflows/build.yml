@@ -1,4 +1,3 @@
-
 name: Build APK
 on: workflow_dispatch
 permissions:
@@ -19,6 +18,44 @@ jobs:
         run: |
           mkdir www
           cp $(ls index.html index.txt 2>/dev/null | head -n 1) www/index.html
+          python3 - <<'PY'
+          p='www/index.html'
+          t=open(p).read()
+          if 'rp1' not in t:
+              R=[
+          (r'''const $=s=>document.querySelector(s)''',r'''let SV={m3:{lvl:1,best:0},mem:{lvl:1,score:0},total:0};
+          try{const s=JSON.parse(localStorage.getItem('rp1')||'null');if(s)SV=Object.assign(SV,s)}catch(e){}
+          const sv=()=>{try{localStorage.setItem('rp1',JSON.stringify(SV))}catch(e){}};
+          const fmt=n=>(n||0).toLocaleString('en-US');
+          const $=s=>document.querySelector(s)'''),
+          (r'''sc+=f.size*10*cb;best=Math.max(best,sc);''',r'''const gain=f.size*10*cb;sc+=gain;SV.total+=gain;SV.m3.best=Math.max(SV.m3.best,sc);sv();'''),
+          (r'''$('#bs').textContent=best''',r'''$('#bs').textContent=fmt(SV.m3.best)'''),
+          (r'''lvl=1;tg=1000;sc=0;mv=0;time=tl();''',r'''lvl=SV.m3.lvl;tg=1000+(lvl-1)*400;sc=0;mv=0;time=tl();'''),
+          (r'''function lvUp(){paused=true;''',r'''function lvUp(){paused=true;SV.m3.lvl=Math.max(SV.m3.lvl,lvl+1);sv();'''),
+          (r'''[['New game','newGame()']]''',r'''[['Try again','newGame()']]'''),
+          (r'''↻ NEW GAME''',r'''↻ RESTART'''),
+          (r'''function mplay(){show('mem');mstart(1)}''',r'''function mplay(){show('mem');mstart(SV.mem.lvl)}'''),
+          (r'''ov('🎉 Level complete','⭐'.repeat(s)+'☆'.repeat(3-s)+`<br>Moves: ${mmv}`,''',r'''const pts=ml*100+mtime*5;SV.mem.score=(SV.mem.score||0)+pts;SV.total+=pts;SV.mem.lvl=Math.max(SV.mem.lvl,ml+1);sv();ov('🎉 Level complete','⭐'.repeat(s)+'☆'.repeat(3-s)+`<br>Moves: ${mmv}<br>Score +${pts}`,'''),
+          (r'''function show(id){[''',r'''function stats(){const a=SV.m3,m=SV.mem;
+           $('#st_hub').innerHTML=`⭐ Total score: <b>${fmt(SV.total)}</b>`;
+           $('#st_m3').innerHTML=`Level <b>${a.lvl}</b> · Best score <b>${fmt(a.best)}</b><br>Total score <b>${fmt(SV.total)}</b>`;
+           $('#st_mem').innerHTML=`Level <b>${m.lvl}</b> · Memory score <b>${fmt(m.score)}</b><br>Total score <b>${fmt(SV.total)}</b>`;
+           $('#pl1').textContent=a.lvl>1?`▶ CONTINUE · LEVEL ${a.lvl}`:'▶ PLAY';$('#pl2').textContent=m.lvl>1?`▶ CONTINUE · LEVEL ${m.lvl}`:'▶ PLAY'}
+          function show(id){['''),
+          (r'''$('#'+x).hidden=x!=id)}''',r'''$('#'+x).hidden=x!=id);stats()}'''),
+          (r'''</script><script type="application/octet-stream" id="appicon">''',r'''stats();
+          </script><script type="application/octet-stream" id="appicon">'''),
+          (r'''<div class="sub">CHOOSE YOUR GAME</div>''',r'''<div class="sub">CHOOSE YOUR GAME</div><div class="stat" id="st_hub"></div>'''),
+          (r'''<button class="gb big" onclick="play()">▶ PLAY</button>''',r'''<div class="stat" id="st_m3"></div><button class="gb big" id="pl1" onclick="play()">▶ PLAY</button>'''),
+          (r'''<button class="gb big" onclick="mplay()">▶ PLAY</button>''',r'''<div class="stat" id="st_mem"></div><button class="gb big" id="pl2" onclick="mplay()">▶ PLAY</button>'''),
+          (r'''.ad{display:none''',r'''.stat{background:#17406f;border-radius:14px;padding:10px;margin:12px 0;font-size:14px;line-height:1.7;color:#ffd866}.stat b{color:#fff}.ad{display:none'''),
+              ]
+              for a,b in R:
+                  if a not in t: raise SystemExit('missing: '+a[:40])
+                  t=t.replace(a,b,1)
+              open(p,'w').write(t)
+          print('patched')
+          PY
           python3 - <<'PY'
           import re,base64
           t=open('www/index.html').read()
